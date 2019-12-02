@@ -31,6 +31,7 @@ salmonindex: /dataVolume/storage/Homo_sapiens/grch38/SalmonIndex/Homo_sapiens.GR
 salmonk: 31
 STARindex: /dataVolume/storage/Homo_sapiens/grch38/STARIndex/Homo_sapiens.GRCh38.87.STAR.idx
 HISAT2index: /dataVolume/storage/Homo_sapiens/grch38_tran/genome_tran
+bowtie2index: /dataVolume/storage/Homo_sapiens/UCSC/hg19/Annotation/Archives/archive-2015-07-17-14-32-32/Genes/genes
 ##--------------------------------------------------------------------------------------------
 
 
@@ -114,6 +115,7 @@ Rbin: "/usr/bin/R"
 run_trimming: True
 run_STAR: False
 run_HISAT2: True
+run_bowtie2: True
 run_SALMON: False
 run_DRIMSeq: False
 run_camera: False

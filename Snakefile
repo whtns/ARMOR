@@ -80,6 +80,10 @@ def jbrowse_output(wildcards):
   input.append("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json")
   return input
   
+def varbin_output(wildcards):
+  input = []
+  input.extend(expand(outputdir + "bowtie2/{sample}/{sample}.vb", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  return input
 	
 ## ------------------------------------------------------------------------------------ ##
 ## Target definitions
@@ -88,8 +92,8 @@ def jbrowse_output(wildcards):
 rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
+		#varbin_output,
 		outputdir + "seurat/unfiltered_seu.rds",
-		# stringtie_output,
 		# dbtss_output,
 		jbrowse_output
 
@@ -478,6 +482,86 @@ rule bigwighisat2:
 		"{params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph; "
 		"bedGraphToBigWig {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph "
 		"{input.chrl} {output}; rm -f {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph"
+
+
+## ------------------------------------------------------------------------------------ ##
+## Bowtie 2
+## ------------------------------------------------------------------------------------ ##
+## Genome mapping with bowtie2
+
+rule intronic_below_n:
+	input: 
+		sorted_bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
+	output:
+		intronic_bam_below_n = temp(outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out_intronic_below_3.bam")
+	log:
+		outputdir + "logs/belown_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/belown_{sample}.txt"
+	params:
+		exonic_bed="/home/skevin/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes_exonic.bed",
+		coverage="3"
+	conda: 
+		"envs/environment.yaml"
+	shell:
+		"../src/get_intronic_bam_below_n.sh {input.sorted_bam} {params.coverage} {params.exonic_bed} > {output.intronic_bam_below_n}"
+
+rule samtoolsfastq:
+	input:
+		intronic_bam_below_n = temp(outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out_intronic_below_3.bam")
+	output: 
+		intronic_fastq_R1 = outputdir + "HISAT2/{sample}/{sample}_Aligned.out_R1.fastq.gz",
+		intronic_fastq_R2 = outputdir + "HISAT2/{sample}/{sample}_Aligned.out_R2.fastq.gz"
+	threads:
+		config["ncores"]
+	log:
+		outputdir + "logs/samtoolsfastq_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/samtoolsfastq_{sample}.txt"
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"echo 'samtools --version:\n' > {log}; samtools --version >> {log}; "
+		"samtools fastq -0 /dev/null -1 {input.intronic_fastq_R1} -2 {input.intronic_fastq_R2} {input.intronic_bam_below_n}"	
+
+rule bowtie2PE:
+	input:
+		intronic_fastq_R1 = outputdir + "HISAT2/{sample}/{sample}_Aligned.out_R1.fastq.gz",
+		intronic_fastq_R2 = outputdir + "HISAT2/{sample}/{sample}_Aligned.out_R2.fastq.gz"
+	output:
+		intronic_sam_below_n = outputdir + "bowtie2/{sample}/{sample}_Aligned.sortedByCoord.out_intronic_below_3.sam"
+	threads:
+		config["ncores"]
+	log:
+		outputdir + "logs/bowtie2_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/bowtie2_{sample}.txt"
+	params:
+		bowtie2index = config["bowtie2index"],
+		bowtie2dir = outputdir + "bowtie2"
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"echo 'bowtie2 --version:\n' > {log}; bowtie2 --version >> {log}; "
+		"bowtie2 -x {params.bowtie2index} -1 {input.fastq1} -2 {input.fastq2} -p {threads} | samtools sort -O sam -o {output.intronic_sam_below_n}"
+		
+rule varbin:
+	input: 
+		intronic_sam_below_n = outputdir + "bowtie2/{sample}/{sample}_Aligned.sortedByCoord.out_intronic_below_3.sam"
+	output:
+		vb_file = outputdir + "bowtie2/{sample}/{sample}.vb",
+		stat_file = outputdir + "bowtie2/{sample}/{sample}.stat.txt"
+	log:
+		outputdir + "logs/varbin_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/varbin_{sample}.txt"
+	params:
+		chromInfo = "/usr/local/bin/TOOLS/varbin/lib/hg19.chromInfo.cumsum.txt",
+		boundaries = "/usr/local/bin/TOOLS/varbin/lib/bin.boundaries.200k.bowtie.sorted.bin.txt"
+	conda: 
+		"envs/environment.yaml"
+	shell:
+		"varbin.sam.2.py {input.intronic_sam_below_n} {output.vb_file} {output.stat_file} {params.chromInfo} {params.boundaries}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Stringtie
