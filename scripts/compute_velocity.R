@@ -26,12 +26,12 @@ seu <- readRDS(seu_file)
 # IMPORTANT!!! create a loom file using the velocyto command line tools first
 #line 114 cannot run in chunk; use terminal
 
-loom_path <- fs::path(proj_dir, "output", "velocyto", "MyTissue.loom") %>%
-  identity()
+# loom_path <- fs::path(proj_dir, "output", "velocyto", "MyTissue.loom") %>%
+#   identity()
 
-ldat <- read.loom.matrices(loom_path)
+# ldat <- read.loom.matrices(loom_path)
 
-velocity_seu <- seuratTools::velocyto_seu(seu, ldat)
+velocity_seu <- seuratTools::velocyto_seu(seu, loom_path)
 
 if(identical(dim(velocity_seu$gene), dim(seu$gene))){
   saveRDS(velocity_seu, str_replace(seu_file, "seurat", "velocyto"))  
