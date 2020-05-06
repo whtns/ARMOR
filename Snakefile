@@ -91,8 +91,8 @@ rule all:
 		outputdir + "seurat/unfiltered_seu.rds",
 		# dbtss_output,
 		jbrowse_output,
-		loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
-		velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds"
+		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
+		# velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds"
 
 rule setup:
 	input:
