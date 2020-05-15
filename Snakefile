@@ -1,3 +1,7 @@
+
+# send email
+# cat email.txt | msmtp --account=default <recipient@somedomain.com>
+
 ## Configuration file
 import os
 if len(config) == 0:
