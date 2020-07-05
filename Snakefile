@@ -242,28 +242,28 @@ rule linkedtxome:
 		'''{Rbin} CMD BATCH --no-restore --no-save "--args transcriptfasta='{input.txome}' salmonidx='{input.salmonidx}' gtf='{input.gtf}' annotation='{params.flag}' organism='{params.organism}' release='{params.release}' build='{params.build}' output='{output}'" {input.script} {log}'''
 
 ## Generate STAR index
-rule starindex:
-	input:
-		genome = config["genome"],
-		gtf = config["gtf"]
-	output:
-		config["STARindex"] + "/SA",
-		config["STARindex"] + "/chrNameLength.txt"
-	log:
-		outputdir + "logs/STAR_index.log"
-	benchmark:
-		outputdir + "benchmarks/STAR_index.txt"
-	params:
-		STARindex = config["STARindex"],
-		readlength = config["readlength"]
-	conda:
-		"envs/environment.yaml"
-	threads:
-		config["ncores"]
-	shell:
-		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
-		"STAR --runMode genomeGenerate --runThreadN {threads} --genomeDir {params.STARindex} "
-		"--genomeFastaFiles {input.genome} --sjdbGTFfile {input.gtf} --sjdbOverhang {params.readlength}"
+# rule starindex:
+# 	input:
+# 		genome = config["genome"],
+# 		gtf = config["gtf"]
+# 	output:
+# 		config["STARindex"] + "/SA",
+# 		config["STARindex"] + "/chrNameLength.txt"
+# 	log:
+# 		outputdir + "logs/STAR_index.log"
+# 	benchmark:
+# 		outputdir + "benchmarks/STAR_index.txt"
+# 	params:
+# 		STARindex = config["STARindex"],
+# 		readlength = config["readlength"]
+# 	conda:
+# 		"envs/environment.yaml"
+# 	threads:
+# 		config["ncores"]
+# 	shell:
+# 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
+# 		"STAR --runMode genomeGenerate --runThreadN {threads} --genomeDir {params.STARindex} "
+# 		"--genomeFastaFiles {input.genome} --sjdbGTFfile {input.gtf} --sjdbOverhang {params.readlength}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Quality control
@@ -589,28 +589,28 @@ rule salmonPE:
 ## STAR mapping
 ## ------------------------------------------------------------------------------------ ##
 ## Genome mapping with STAR
-rule starSE:
-	input:
-		index = config["STARindex"] + "/SA",
-		fastq = outputdir + "FASTQtrimmed/{sample}_trimmed.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}." + str(config["fqsuffix"]) + ".gz"
-	output:
-		outputdir + "STAR/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
-	threads:
-		config["ncores"]
-	log:
-		outputdir + "logs/STAR_{sample}.log"
-	benchmark:
-		outputdir + "benchmarks/STAR_{sample}.txt"
-	params:
-		STARindex = config["STARindex"],
-		STARdir = outputdir + "STAR"
-	conda:
-		"envs/environment.yaml"
-	shell:
-		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
-		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq} "
-		"--runThreadN {threads} --outFileNamePrefix {params.STARdir}/{wildcards.sample}/{wildcards.sample}_ "
-		"--outSAMtype BAM SortedByCoordinate --readFilesCommand gunzip -c"
+# rule starSE:
+# 	input:
+# 		index = config["STARindex"] + "/SA",
+# 		fastq = outputdir + "FASTQtrimmed/{sample}_trimmed.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}." + str(config["fqsuffix"]) + ".gz"
+# 	output:
+# 		outputdir + "STAR/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
+# 	threads:
+# 		config["ncores"]
+# 	log:
+# 		outputdir + "logs/STAR_{sample}.log"
+# 	benchmark:
+# 		outputdir + "benchmarks/STAR_{sample}.txt"
+# 	params:
+# 		STARindex = config["STARindex"],
+# 		STARdir = outputdir + "STAR"
+# 	conda:
+# 		"envs/environment.yaml"
+# 	shell:
+# 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
+# 		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq} "
+# 		"--runThreadN {threads} --outFileNamePrefix {params.STARdir}/{wildcards.sample}/{wildcards.sample}_ "
+# 		"--outSAMtype BAM SortedByCoordinate --readFilesCommand gunzip -c"
 
 rule starPE:
 	input:
