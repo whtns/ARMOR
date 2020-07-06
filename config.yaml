@@ -108,6 +108,11 @@ useCondaR: False
 Rbin: "/usr/bin/R"
 ##---------------------------------------------------------------------------------------------
 
+## Scenic
+TFs: /dataVolume/storage/Homo_sapiens/scenic/hs_hgnc_curated_tfs.txt
+motifs: /dataVolume/storage/scenic/motifs-v9-nr.hgnc.tbl
+feather_db: /dataVolume/storage/Homo_sapiens/scenic/hg38_refseq-10kb_up_and_down_tss.mc9nr.feather
+
 ## Conditional conda rules
 ##---------------------------------------------------------------------------------------------
 ## Should read trimming, STAR mapping, DRIMSeq analysis and gene set analysis be performed? Set
