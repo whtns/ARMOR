@@ -110,7 +110,7 @@ Rbin: "/usr/bin/R"
 
 ## Scenic
 TFs: /dataVolume/storage/Homo_sapiens/scenic/hs_hgnc_curated_tfs.txt
-motifs: /dataVolume/storage/scenic/motifs-v9-nr.hgnc.tbl
+motifs: /dataVolume/storage/Homo_sapiens/scenic/motifs-v9-nr.hgnc.tbl
 feather_db: /dataVolume/storage/Homo_sapiens/scenic/hg38_refseq-10kb_up_and_down_tss.mc9nr.feather
 
 ## Conditional conda rules
@@ -118,7 +118,7 @@ feather_db: /dataVolume/storage/Homo_sapiens/scenic/hg38_refseq-10kb_up_and_down
 ## Should read trimming, STAR mapping, DRIMSeq analysis and gene set analysis be performed? Set
 ## to False if the step is not required.
 run_trimming: True
-run_STAR: True
+run_STAR: False
 run_HISAT2: True
 run_SALMON: False
 run_DRIMSeq: False

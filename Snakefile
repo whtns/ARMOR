@@ -96,7 +96,9 @@ rule all:
 		# dbtss_output,
 		jbrowse_output,
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
-		# velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds"
+		# velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds",
+		# loom = outputdir + "scenic/unfiltered.loom"
+		final_loom = outputdir + "scenic/unfiltered-final.loom"
 
 rule setup:
 	input:
@@ -767,7 +769,7 @@ rule velocyto_seurat:
 ## SCENIC
 ## ------------------------------------------------------------------------------------ ##
 
-# include: "rules/scenic.smk"
+include: "rules/scenic.smk"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Input variable check
