@@ -636,7 +636,7 @@ rule starPE:
 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
 		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq1} {input.fastq2} "
 		"--runThreadN {threads} --outFileNamePrefix {params.STARdir}/{wildcards.sample}/{wildcards.sample}_ "
-		"--outSAMtype BAM SortedByCoordinate --readFilesCommand gunzip -c"
+		"--outSAMtype BAM SortedByCoordinate --outSAMattrIHstart 0 --readFilesCommand gunzip -c"
 
 ## Index bam files
 rule bamindex:
