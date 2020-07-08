@@ -15,6 +15,7 @@ dependencies:
 - pandas
 - cython
 - numba
+- HTSeq=0.12.4
 - pip
 - pip:
     - velocyto
