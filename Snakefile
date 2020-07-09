@@ -73,11 +73,6 @@ def stringtie_output(wildcards):
 	input.extend(expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names[samples.type == 'PE'].values.tolist()))
 	return input
 	
-def dexseq_output(wildcards):
-	input = []
-	input.extend(expand(outputdir + "dexseq/{sample}/{sample}.txt", sample = samples.names[samples.type == 'PE'].values.tolist()))
-	return input
-	
 def dbtss_output(wildcards):
 	input = []
 	input.extend(expand(outputdir + "dbtss_coverage/{sample}_dbtss_coverage_over_10.txt", sample = samples.names[samples.type == 'PE'].values.tolist()))
@@ -99,12 +94,11 @@ rule all:
 		outputdir + "MultiQC/multiqc_report.html",
 		outputdir + "seurat/unfiltered_seu.rds",
 		# dbtss_output,
-		jbrowse_output,
-		dexseq_output,
+		jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
 		# velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds",
 		# loom = outputdir + "scenic/unfiltered.loom"
-		final_loom = outputdir + "scenic/unfiltered-final.loom"
+		# final_loom = outputdir + "scenic/unfiltered-final.loom"
 
 rule setup:
 	input:
@@ -850,35 +844,12 @@ rule edgeR:
 		'''{Rbin} CMD BATCH --no-restore --no-save "--args se='{input.rds}' organism='{params.organism}' design='{params.design}' contrast='{params.contrast}' {params.genesets} rmdtemplate='{input.template}' outputdir='{params.directory}' outputfile='edgeR_dge.html'" {input.script} {log}'''
 
 ## ------------------------------------------------------------------------------------ ##
-## Differential exon usage
-## ------------------------------------------------------------------------------------ ##
-## DEXSeq
-rule DEXSeq:
-	input:
-		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam",
-		script = "scripts/dexseq_count.py"
-	output:
-		exon_txt = outputdir + "dexseq/{sample}/{sample}.txt"
-	params:
-		exon_gff = config['exon_collapsed_gff']
-	log:
-		outputdir + "logs/dexseq_{sample}.log"
-	benchmark:
-		outputdir + "benchmarks/dexseq_{sample}.txt"
-	conda:
-		"envs/environment.yaml"
-	threads:
-		config["ncores"]
-	shell:
-		"{input.script} -p yes -s no -f bam -r pos {params.exon_gff} {input.bam} {output.exon_txt}"
-
-## ------------------------------------------------------------------------------------ ##
 ## Differential transcript usage
 ## ------------------------------------------------------------------------------------ ##
 ## DRIMSeq
 rule DRIMSeq:
 	input:
-	    outputdir + "Rout/pkginstall_state.txt",
+	  outputdir + "Rout/pkginstall_state.txt",
 		rds = outputdir + "outputR/edgeR_dge.rds",
 		script = "scripts/run_render.R",
 		template = "scripts/DRIMSeq_dtu.Rmd"
