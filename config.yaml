@@ -120,7 +120,7 @@ exon_collapsed_gff: /dataVolume/storage/Homo_sapiens/grch38_tran/Homo_sapiens.GR
 ## Should read trimming, STAR mapping, DRIMSeq analysis and gene set analysis be performed? Set
 ## to False if the step is not required.
 run_trimming: True
-run_STAR: True
+run_STAR: False
 run_HISAT2: True
 run_SALMON: False
 run_DRIMSeq: False
