@@ -10,17 +10,20 @@ metadata = sys.argv[2]
 
 tracks_conf_file="/var/www/html/jbrowse/" + proj_name + "/trackList.json"
 # tracks_conf_file=sys.argv[1]
-# bigwig_dir=sys.argv[2]
+# samples_dir=sys.argv[2]
 # metadata_file = sys.argv[3]
 
-bigwig_dir = "/var/www/html/jbrowse/" + proj_name + "/samples/"
+samples_dir = "/var/www/html/jbrowse/" + proj_name + "/samples/"
 
 bigwig_files = []
-for (dirpath, dirnames, filenames) in os.walk(bigwig_dir):
+bam_files = []
+for (dirpath, dirnames, filenames) in os.walk(samples_dir):
 	for filename in filenames:
 		if filename.endswith(".bw"):
 			bigwig_files.append("samples/" + filename)
-	# bigwig_files.extend(filenames)
+		if filename.endswith(".bam"):
+			bam_files.append("samples/" + filename)
+	# sample_files.extend(filenames)
 
 tracks_list = [
 	      {
@@ -53,14 +56,25 @@ for i in bigwig_files:
 			},
 			"compress" : "0",
 			"type" : "JBrowse/View/Track/Wiggle/XYPlot",
-			"label" : os.path.basename(i).replace(".bw", ""),
-			"key" : os.path.basename(i).replace(".bw", ""),
+			"label" : os.path.basename(i),
+			"key" : "bigwig",
 			"scale" : "log"
 			}
 		)
 		
+for i in bam_files:
+	tracks_list.append(
+	  {
+         "storeClass"  : "JBrowse/Store/SeqFeature/BAM",
+         "urlTemplate" : i,
+         "label" : os.path.basename(i),
+         "key" : "bam",
+         "type"        : "JBrowse/View/Track/Alignments2"
+      }
+		)
+		
 # "plugins" : ["NeatHTMLFeatures", "NeatCanvasFeatures", "HideTrackLabels"],		
-bigwig_dict = {
+samples_dict = {
 	"tracks" : tracks_list,
 	"trackMetadata": {
       "sources": [
@@ -80,12 +94,13 @@ bigwig_dict = {
         "label",
       ]
    },
-  "formatVersion" : "1"
+  "formatVersion" : "1",
+  "dataset_id" : proj_name
 }
 
 
 with open(tracks_conf_file, 'w') as json_file:
-  json.dump(bigwig_dict, json_file, indent = 2, sort_keys = False)
+  json.dump(samples_dict, json_file, indent = 2, sort_keys = False)
 # print(json.dumps(person_dict, indent = 4, sort_keys=True))
 
 

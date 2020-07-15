@@ -81,6 +81,9 @@ def dbtss_output(wildcards):
 def jbrowse_output(wildcards):
   input = []
   input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  # input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  # input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bai", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  
   input.append("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json")
   return input
   
@@ -92,7 +95,7 @@ def jbrowse_output(wildcards):
 rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
-		outputdir + "seurat/unfiltered_seu.rds",
+		# outputdir + "seurat/unfiltered_seu.rds",
 		# dbtss_output,
 		jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
@@ -437,7 +440,7 @@ rule HISAT2PE:
 		fastq1 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext1"]) + "_val_1.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext1"]) + "." + str(config["fqsuffix"]) + ".gz",
 		fastq2 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext2"]) + "_val_2.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext2"]) + "." + str(config["fqsuffix"]) + ".gz"
 	output:
-		bam = temp(outputdir + "HISAT2/{sample}/{sample}_Aligned.out.bam")
+		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.out.bam"
 	threads:
 		config["ncores"]
 	log:
@@ -957,8 +960,12 @@ rule jbrowsemeta:
 
 rule jbrowse:
 	input:
-		hisatbigwig = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw"
+	  hisatbam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam",
+	  hisatbai = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam.bai",
+	  hisatbigwig = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw"
 	output:
+	  bam_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam",
+	  bai_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam.bai",
 	  bigwig_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bw"
 	threads:
 		config["ncores"]
@@ -967,11 +974,14 @@ rule jbrowse:
 	conda:
 		"envs/environment.yaml"
 	shell:
+	  "ln -s {input.hisatbam} {output.bam_symlink}; "
+	  "ln -s {input.hisatbai} {output.bai_symlink}; "
 	  "ln -s {input.hisatbigwig} {output.bigwig_symlink}"
 	  
 rule jbrowsetracklist:
 	input:
-		script = "scripts/format_tracklist_json.py",
+		bigwigscript = "scripts/format_tracklist_json.py",
+		# bamcript = "scripts/format_tracklist_json_bams.py",
 		refdir = config["refdir"],
 		gff = config["gff"],
 		gff_tbi = config["gff_tbi"],
@@ -984,17 +994,19 @@ rule jbrowsetracklist:
 	  refseq_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/seq/refSeqs.json"
 	threads:
 		config["ncores"]
+	log:
+		outputdir + "logs/browsetracklist.log"
 	params:
 	  proj_name = os.path.basename(proj_dir),
 	  metacsv = os.path.basename(proj_dir) + "/" + config['metacsv']
 	conda:
 		"envs/environment.yaml"
 	shell:
-	  "{input.script} '{params.proj_name}' '{params.metacsv}';"
-	  "ln -sr {input.refdir} {output.refdir_symlink};"
-	  "ln -s {input.gff} {output.gff_symlink};"
-	  "ln -s {input.gff_tbi} {output.gff_tbi_symlink};"
-	  "ln -s {input.refseq} {output.refseq_symlink};"
+	  "{input.bigwigscript} '{params.proj_name}' '{params.metacsv}'; "
+	  "ln -sr {input.refdir} {output.refdir_symlink}; "
+	  "ln -s {input.gff} {output.gff_symlink}; "
+	  "ln -s {input.gff_tbi} {output.gff_tbi_symlink}; "
+	  "ln -s {input.refseq} {output.refseq_symlink}; "
 
 ## ------------------------------------------------------------------------------------ ##
 ## Success and failure messages
