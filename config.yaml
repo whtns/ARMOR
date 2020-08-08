@@ -77,7 +77,7 @@ ncores: 6
 ## Single-end fastq files are supposed to be named 
 ## <sample-name>.<fqsuffix>.gz.
 ##---------------------------------------------------------------------------------------------
-FASTQ: ../data/FASTQ
+FASTQ: ../data/FASTQ/
 fqext1: R1
 fqext2: R2
 fqsuffix: fastq
@@ -122,7 +122,7 @@ exon_collapsed_gff: /dataVolume/storage/Homo_sapiens/grch38_tran/Homo_sapiens.GR
 run_trimming: True
 run_STAR: False
 run_HISAT2: True
-run_SALMON: False
+run_SALMON: True
 run_DRIMSeq: False
 run_camera: False
 run_genebodycoverage: False

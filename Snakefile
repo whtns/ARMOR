@@ -78,11 +78,18 @@ def dbtss_output(wildcards):
 	input.extend(expand(outputdir + "dbtss_coverage/{sample}_dbtss_coverage_over_10.txt", sample = samples.names[samples.type == 'PE'].values.tolist()))
 	return input
 	
+def bigwigoutput(wildcards):
+  input = []
+  input.extend(expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  return input
+  
 def jbrowse_output(wildcards):
   input = []
+  input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json"))
+  # input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/output"))
   input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
-  # input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam", sample = samples.names[samples.type == 'PE'].values.tolist()))
-  # input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bai", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam.bai", sample = samples.names[samples.type == 'PE'].values.tolist()))
   
   input.append("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json")
   return input
@@ -95,9 +102,10 @@ def jbrowse_output(wildcards):
 rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
+		bigwigoutput,
 		# outputdir + "seurat/unfiltered_seu.rds",
 		# dbtss_output,
-		jbrowse_output
+		# jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
 		# velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds",
 		# loom = outputdir + "scenic/unfiltered.loom"
@@ -509,7 +517,8 @@ rule bigwighisat2:
 		"bedtools genomecov -split -ibam {input.bam} -bg | LC_COLLATE=C sort -k1,1 -k2,2n > "
 		"{params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph; "
 		"bedGraphToBigWig {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph "
-		"{input.chrl} {output}; rm -f {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph"
+		"{input.chrl} {output}; "
+		#"rm -f {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Stringtie
@@ -944,69 +953,8 @@ rule dbtss:
 ## ------------------------------------------------------------------------------------ ##
 ## configure jbrowse
 ## ------------------------------------------------------------------------------------ ##
-## configure jbrowse
 
-rule jbrowsemeta:
-  input: 
-    metatxt = config['metatxt']
-  output:
-    metacsv = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + config['metacsv']
-  threads:
-    config['ncores']
-  conda: 
-    "envs/environment.yaml"
-  shell:
-    "cp {input.metatxt} {output.metacsv}"
-
-rule jbrowse:
-	input:
-	  hisatbam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam",
-	  hisatbai = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam.bai",
-	  hisatbigwig = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw"
-	output:
-	  bam_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam",
-	  bai_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam.bai",
-	  bigwig_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bw"
-	threads:
-		config["ncores"]
-	params:
-	  proj_name = os.path.basename(proj_dir)
-	conda:
-		"envs/environment.yaml"
-	shell:
-	  "ln -s {input.hisatbam} {output.bam_symlink}; "
-	  "ln -s {input.hisatbai} {output.bai_symlink}; "
-	  "ln -s {input.hisatbigwig} {output.bigwig_symlink}"
-	  
-rule jbrowsetracklist:
-	input:
-		bigwigscript = "scripts/format_tracklist_json.py",
-		# bamcript = "scripts/format_tracklist_json_bams.py",
-		refdir = config["refdir"],
-		gff = config["gff"],
-		gff_tbi = config["gff_tbi"],
-		refseq = config["refseq"]
-	output:
-	  tracklist_json = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json",
-	  refdir_symlink = directory("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/reference/"),
-	  gff_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/Homo_sapiens.GRCh38.87.sorted.gff3.gz",
-	  gff_tbi_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/Homo_sapiens.GRCh38.87.sorted.gff3.gz.tbi",
-	  refseq_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/seq/refSeqs.json"
-	threads:
-		config["ncores"]
-	log:
-		outputdir + "logs/browsetracklist.log"
-	params:
-	  proj_name = os.path.basename(proj_dir),
-	  metacsv = os.path.basename(proj_dir) + "/" + config['metacsv']
-	conda:
-		"envs/environment.yaml"
-	shell:
-	  "{input.bigwigscript} '{params.proj_name}' '{params.metacsv}'; "
-	  "ln -sr {input.refdir} {output.refdir_symlink}; "
-	  "ln -s {input.gff} {output.gff_symlink}; "
-	  "ln -s {input.gff_tbi} {output.gff_tbi_symlink}; "
-	  "ln -s {input.refseq} {output.refseq_symlink}; "
+include: "rules/jbrowse.smk"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Success and failure messages
@@ -1016,3 +964,4 @@ onsuccess:
 
 onerror:
 	print("Error! The Snakemake workflow aborted.")
+
