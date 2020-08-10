@@ -103,7 +103,7 @@ rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
-		# outputdir + "seurat/unfiltered_seu.rds",
+		outputdir + "seurat/salmon_seu.rds"
 		# dbtss_output,
 		# jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
@@ -744,7 +744,7 @@ rule tximport:
 		expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names.values.tolist()),
 		script = "scripts/run_tximport.R"
 	output:
-		outputdir + "seurat/unfiltered_seu.rds"
+		outputdir + "seurat/salmon_seu.rds"
 	log:
 		outputdir + "Rout/tximport.Rout"
 	benchmark:
