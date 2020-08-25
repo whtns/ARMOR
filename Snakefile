@@ -103,7 +103,8 @@ rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
-		outputdir + "seurat/salmon_seu.rds"
+		outputdir + "seurat/unfiltered_seu.rds",
+		outputdir + "seurat/legacy_seu.rds",
 		# dbtss_output,
 		# jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
@@ -744,7 +745,8 @@ rule tximport:
 		expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names.values.tolist()),
 		script = "scripts/run_tximport.R"
 	output:
-		outputdir + "seurat/salmon_seu.rds"
+		unfiltered_seu_rds = outputdir + "seurat/unfiltered_seu.rds",
+		legacy_seu_rds = outputdir + "seurat/legacy_seu.rds"
 	log:
 		outputdir + "Rout/tximport.Rout"
 	benchmark:
@@ -755,7 +757,9 @@ rule tximport:
 	conda:
 		Renv
 	shell:
-		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' proj_dir='{proj_dir}' outrds='{output}' organism='{params.organism}'" {input.script} {log}'''
+		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' 
+		proj_dir='{proj_dir}' unfiltered_seu_rds='{output.unfiltered_seu_rds}' 
+		legacy_seu_rds='{output.legacy_seu_rds}' organism='{params.organism}'" {input.script} {log}'''
 
 ## rna velocity on a seurat object
 rule velocyto_seurat:
@@ -862,7 +866,7 @@ rule edgeR:
 rule DRIMSeq:
 	input:
 	  outputdir + "Rout/pkginstall_state.txt",
-		rds = outputdir + "outputR/edgeR_dge.rds",
+		rds = outputdir + "seurat/unfiltered_seu.rds",
 		script = "scripts/run_render.R",
 		template = "scripts/DRIMSeq_dtu.Rmd"
 	output:
@@ -871,9 +875,7 @@ rule DRIMSeq:
 	params:
 		directory = outputdir + "outputR",
 		organism = config["organism"],
-		ncores = config["ncores"],
-                design = config["design"].replace(" ", "") if config["design"] is not None else "",
-                contrast = config["contrast"].replace(" ", "") if config["contrast"] is not None else ""
+		ncores = config["ncores"], design = config["design"].replace(" ", "") if config["design"] is not None else "", contrast = config["contrast"].replace(" ", "") if config["contrast"] is not None else ""
 	log:
 		outputdir + "Rout/run_dtu_drimseq.Rout"
 	benchmark:
