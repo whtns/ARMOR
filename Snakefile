@@ -82,6 +82,11 @@ def bigwigoutput(wildcards):
   input = []
   input.extend(expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
   return input
+
+def dexseqoutput(wildcards):
+  input = []
+  input.extend(expand(outputdir + "dexseq/{sample}.txt", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  return input
   
 def jbrowse_output(wildcards):
   input = []
@@ -103,8 +108,9 @@ rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
-		outputdir + "seurat/unfiltered_seu.rds",
-		outputdir + "seurat/legacy_seu.rds",
+		# outputdir + "seurat/unfiltered_retinal_ref_seu.rds", 
+		# outputdir + "seurat/legacy_retinal_ref_seu.rds",
+		dexseqoutput
 		# dbtss_output,
 		# jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
@@ -546,6 +552,32 @@ rule stringtie:
 		"stringtie {input.bam} -G {params.stringtiegtf} -x MT -eB -o {output.gtf}"
 
 ## ------------------------------------------------------------------------------------ ##
+## DEXSeq
+## ------------------------------------------------------------------------------------ ##
+
+# Transcript assembly using dexseq
+rule dexseq:
+	input:
+		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
+	output:
+		txt = outputdir + "dexseq/{sample}.txt"
+	log:
+		outputdir + "logs/dexseq_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/dexseq_{sample}.txt"
+	threads:
+		config["ncores"]
+	params:
+		dexseqgtf = config["exon_collapsed_gff"],
+		dexseqdir = outputdir + "dexseq"
+	conda:
+		"envs/environment.yaml"
+	shell:
+		# "echo 'dexseq version:\n' > {log}; dexseq --version >> {log}; "
+		"python scripts/dexseq_count.py -r pos -p yes -s no -f bam {params.dexseqgtf} {input.bam} {output.txt}"
+
+
+## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
 ## ------------------------------------------------------------------------------------ ##
 # Estimate abundances with Salmon
@@ -745,8 +777,8 @@ rule tximport:
 		expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names.values.tolist()),
 		script = "scripts/run_tximport.R"
 	output:
-		unfiltered_seu_rds = outputdir + "seurat/unfiltered_seu.rds",
-		legacy_seu_rds = outputdir + "seurat/legacy_seu.rds"
+		unfiltered_seu_rds = outputdir + "seurat/unfiltered_retinal_ref_seu.rds",
+		legacy_seu_rds = outputdir + "seurat/legacy_retinal_ref_seu.rds"
 	log:
 		outputdir + "Rout/tximport.Rout"
 	benchmark:

@@ -19,7 +19,10 @@ release: 87
 txome: /dataVolume/storage/Homo_sapiens/grch38/txome/Homo_sapiens.GRCh38.cdna.all.fa.gz
 genome: /dataVolume/storage/Homo_sapiens/grch38/Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa
 bed: /dataVolume/storage/Homo_sapiens/grch38_tran/Homo_sapiens.GRCh38.87.bed
+# standard
 gtf: /dataVolume/storage/Homo_sapiens/grch38_tran/Homo_sapiens.GRCh38.87.gtf
+# retinal
+# gtf: /dataVolume/storage/Homo_sapiens/grch38_tran_retinal_reference/Retina_Fetal.Tissue.gtf
 repeat_mask: /dataVolume/storage/Homo_sapiens/grch38_tran/Homo_sapiens.GRCh38.87.rmsk.gtf
 dbtss_bed: /dataVolume/storage/Homo_sapiens/dbtss/corrected_dbtss.bed
 chrom_sizes: /dataVolume/storage/Homo_sapiens/grch38/Homo_sapiens.GRCh38.dna_sm.primary_assembly.chrom.sizes
@@ -113,7 +116,9 @@ feather_db: /dataVolume/storage/Homo_sapiens/scenic/hg38_refseq-10kb_up_and_down
 
 
 ## DEXSeq
+roi_bed: ../output/dexseq/genes_of_interest.bed
 exon_collapsed_gff: /dataVolume/storage/Homo_sapiens/grch38_tran/Homo_sapiens.GRCh38.87.dexseq.gtf
+
 
 ## Conditional conda rules
 ##---------------------------------------------------------------------------------------------
