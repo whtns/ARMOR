@@ -18,7 +18,6 @@ rule jbrowsemeta:
 
 rule jbrowse:
 	input:
-	  directory(outputdir + "HISAT2/{sample}"),
 	  hisatbam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam",
 	  hisatbai = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam.bai",
 	  hisatbigwig = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw"
@@ -48,7 +47,7 @@ rule jbrowsetracklist:
 		refseq = config["refseq"]
 	output:
 	  tracklist_json = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json",
-	  refdir_symlink = directory("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/reference/"),
+	  refdir_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/reference/",
 	  gff_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/Homo_sapiens.GRCh38.87.sorted.gff3.gz",
 	  gff_tbi_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/Homo_sapiens.GRCh38.87.sorted.gff3.gz.tbi",
 	  refseq_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/seq/refSeqs.json"
