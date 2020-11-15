@@ -108,9 +108,10 @@ rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
-		# outputdir + "seurat/unfiltered_retinal_ref_seu.rds", 
-		# outputdir + "seurat/legacy_retinal_ref_seu.rds",
-		dexseqoutput
+		outputdir + "seurat/unfiltered_seu.rds",
+		# stringtie_output,
+		# outputdir + "seurat/legacy_unfiltered_seu.rds",
+		# dexseqoutput
 		# dbtss_output,
 		# jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
@@ -777,8 +778,7 @@ rule tximport:
 		expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names.values.tolist()),
 		script = "scripts/run_tximport.R"
 	output:
-		unfiltered_seu_rds = outputdir + "seurat/unfiltered_retinal_ref_seu.rds",
-		legacy_seu_rds = outputdir + "seurat/legacy_retinal_ref_seu.rds"
+		unfiltered_seu_rds = outputdir + "seurat/unfiltered_seu.rds",
 	log:
 		outputdir + "Rout/tximport.Rout"
 	benchmark:
@@ -789,9 +789,7 @@ rule tximport:
 	conda:
 		Renv
 	shell:
-		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' 
-		proj_dir='{proj_dir}' unfiltered_seu_rds='{output.unfiltered_seu_rds}' 
-		legacy_seu_rds='{output.legacy_seu_rds}' organism='{params.organism}'" {input.script} {log}'''
+		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' proj_dir='{proj_dir}' unfiltered_seu_rds='{output.unfiltered_seu_rds}' organism='{params.organism}'" {input.script} {log}'''
 
 ## rna velocity on a seurat object
 rule velocyto_seurat:
