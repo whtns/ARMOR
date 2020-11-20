@@ -210,6 +210,20 @@ rule softwareversions:
 ## ------------------------------------------------------------------------------------ ##
 ## Reference preparation
 ## ------------------------------------------------------------------------------------ ##
+rule kallisto_index:
+    input: TRANSCRIPT_FASTA
+    output: "kallisto.index"
+    threads: 1
+    params:
+        partition = "quick",
+        mem = "32000",
+        time = "1:30:00",
+        version = '0.42.4'
+    shell:"""
+module load kallisto/{params.version}
+kallisto index -i kallisto.index {input}
+"""
+
 ## Generate Salmon index from merged cDNA and ncRNA files
 rule salmonindex:
 	input:
@@ -577,6 +591,78 @@ rule dexseq:
 		# "echo 'dexseq version:\n' > {log}; dexseq --version >> {log}; "
 		"python scripts/dexseq_count.py -r pos -p yes -s no -f bam {params.dexseqgtf} {input.bam} {output.txt}"
 
+## ------------------------------------------------------------------------------------ ##
+## Kallisto abundance estimation
+## ------------------------------------------------------------------------------------ ##
+# Estimate abundances with Kallisto
+rule kallistoPE:
+    input: fastq=config.sample2fastq, index="kallisto.index"
+    output: "results/{base}/abundance.tsv"
+    threads: 32
+    params:
+        partition = "quick",
+        mem = "8g",
+        time = "1:30:00",
+        outdir = "results/{base}",
+        version = "0.42.4"
+    shell: """module load kallisto/{params.version}
+kallisto quant --bias -o {params.outdir} -i {input.index} -t {threads} {input.fastq}
+"""
+
+rule kallistoSE:
+	input:
+		index = config["kallistoindex"] + "/hash.bin",
+		fastq = outputdir + "FASTQtrimmed/{sample}_trimmed.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}." + str(config["fqsuffix"]) + ".gz"
+	output:
+		outputdir + "kallisto/{sample}/quant.sf"
+	log:
+		outputdir + "logs/kallisto_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/kallisto_{sample}.txt"
+	threads:
+		config["ncores"]
+	params:
+		kallistoindex = config["kallistoindex"],
+		fldMean = config["fldMean"],
+		fldSD = config["fldSD"],
+		kallistodir = outputdir + "kallisto"
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"echo 'kallisto version:\n' > {log}; kallisto --version >> {log}; "
+		"kallisto quant --bias -o {params.kallistoindex} -l A -r {input.fastq} "
+		"-o {params.kallistodir}/{wildcards.sample} --seqBias --gcBias "
+		"--fldMean {params.fldMean} --fldSD {params.fldSD} -p {threads}"
+		
+		    shell: """module load kallisto/{params.version}
+kallisto quant --bias -o {params.outdir} -i {input.index} -t {threads} {input.fastq}
+"""
+
+rule kallistoPE:
+	input:
+		index = config["kallistoindex"] + "/hash.bin",
+		fastq1 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext1"]) + "_val_1.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext1"]) + "." + str(config["fqsuffix"]) + ".gz",
+		fastq2 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext2"]) + "_val_2.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext2"]) + "." + str(config["fqsuffix"]) + ".gz"
+	output:
+		outputdir + "kallisto/{sample}/quant.sf"
+	log:
+		outputdir + "logs/kallisto_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/kallisto_{sample}.txt"
+	threads:
+		config["ncores"]
+	params:
+		kallistoindex = config["kallistoindex"],
+		fldMean = config["fldMean"],
+		fldSD = config["fldSD"],
+		kallistodir = outputdir + "kallisto"
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"echo 'kallisto version:\n' > {log}; kallisto --version >> {log}; "
+		"kallisto quant -i {params.kallistoindex} -l A -1 {input.fastq1} -2 {input.fastq2} "
+		"-o {params.kallistodir}/{wildcards.sample} --seqBias --gcBias "
+		"--fldMean {params.fldMean} --fldSD {params.fldSD} -p {threads}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
