@@ -98,6 +98,11 @@ def jbrowse_output(wildcards):
   
   input.append("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json")
   return input
+
+def kb_output(wildcards):
+	input = []
+	input.extend(expand(outputdir + "kb/{sample}/adata.h5ad", sample = samples.names[samples.type == 'PE'].values.tolist()))
+	return input
   
 	
 ## ------------------------------------------------------------------------------------ ##
@@ -108,7 +113,8 @@ rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
-		outputdir + "seurat/unfiltered_seu.rds",
+		# outputdir + "seurat/stringtie_seu.rds",
+		kb_output
 		# stringtie_output,
 		# outputdir + "seurat/legacy_unfiltered_seu.rds",
 		# dexseqoutput
@@ -202,7 +208,7 @@ rule softwareversions:
 		"envs/environment.yaml"
 	shell:
 		"echo -n 'ARMOR version ' && cat version; "
-		"salmon --version; trim_galore --version; "
+		"salmon --version; kallisto version; trim_galore --version; "
 		"echo -n 'cutadapt ' && cutadapt --version; "
 		"fastqc --version; STAR --version; hisat2 --version; samtools --version; multiqc --version; "
 		"bedtools --version"
@@ -210,19 +216,6 @@ rule softwareversions:
 ## ------------------------------------------------------------------------------------ ##
 ## Reference preparation
 ## ------------------------------------------------------------------------------------ ##
-rule kallisto_index:
-    input: TRANSCRIPT_FASTA
-    output: "kallisto.index"
-    threads: 1
-    params:
-        partition = "quick",
-        mem = "32000",
-        time = "1:30:00",
-        version = '0.42.4'
-    shell:"""
-module load kallisto/{params.version}
-kallisto index -i kallisto.index {input}
-"""
 
 ## Generate Salmon index from merged cDNA and ncRNA files
 rule salmonindex:
@@ -251,6 +244,8 @@ rule salmonindex:
       salmon index -t {input.txome} -k {params.salmonk} -i {params.salmonoutdir} --type quasi
     fi
     """
+    
+# kb ref -i transcriptome.idx -g transcripts_to_genes.txt -f1 cdna.fa dna.primary_assembly.fa.gz gtf.gz
 
 ## Generate linkedtxome mapping
 rule linkedtxome:
@@ -592,77 +587,30 @@ rule dexseq:
 		"python scripts/dexseq_count.py -r pos -p yes -s no -f bam {params.dexseqgtf} {input.bam} {output.txt}"
 
 ## ------------------------------------------------------------------------------------ ##
-## Kallisto abundance estimation
+## kb abundance estimation
 ## ------------------------------------------------------------------------------------ ##
-# Estimate abundances with Kallisto
-rule kallistoPE:
-    input: fastq=config.sample2fastq, index="kallisto.index"
-    output: "results/{base}/abundance.tsv"
-    threads: 32
-    params:
-        partition = "quick",
-        mem = "8g",
-        time = "1:30:00",
-        outdir = "results/{base}",
-        version = "0.42.4"
-    shell: """module load kallisto/{params.version}
-kallisto quant --bias -o {params.outdir} -i {input.index} -t {threads} {input.fastq}
-"""
-
-rule kallistoSE:
+# Estimate abundances with kb
+rule kbPE:
 	input:
-		index = config["kallistoindex"] + "/hash.bin",
-		fastq = outputdir + "FASTQtrimmed/{sample}_trimmed.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}." + str(config["fqsuffix"]) + ".gz"
-	output:
-		outputdir + "kallisto/{sample}/quant.sf"
-	log:
-		outputdir + "logs/kallisto_{sample}.log"
-	benchmark:
-		outputdir + "benchmarks/kallisto_{sample}.txt"
-	threads:
-		config["ncores"]
-	params:
-		kallistoindex = config["kallistoindex"],
-		fldMean = config["fldMean"],
-		fldSD = config["fldSD"],
-		kallistodir = outputdir + "kallisto"
-	conda:
-		"envs/environment.yaml"
-	shell:
-		"echo 'kallisto version:\n' > {log}; kallisto --version >> {log}; "
-		"kallisto quant --bias -o {params.kallistoindex} -l A -r {input.fastq} "
-		"-o {params.kallistodir}/{wildcards.sample} --seqBias --gcBias "
-		"--fldMean {params.fldMean} --fldSD {params.fldSD} -p {threads}"
-		
-		    shell: """module load kallisto/{params.version}
-kallisto quant --bias -o {params.outdir} -i {input.index} -t {threads} {input.fastq}
-"""
-
-rule kallistoPE:
-	input:
-		index = config["kallistoindex"] + "/hash.bin",
 		fastq1 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext1"]) + "_val_1.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext1"]) + "." + str(config["fqsuffix"]) + ".gz",
 		fastq2 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext2"]) + "_val_2.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext2"]) + "." + str(config["fqsuffix"]) + ".gz"
 	output:
-		outputdir + "kallisto/{sample}/quant.sf"
+		outputdir + "kb/{sample}/adata.h5ad"
 	log:
-		outputdir + "logs/kallisto_{sample}.log"
+		outputdir + "logs/kb_{sample}.log"
 	benchmark:
-		outputdir + "benchmarks/kallisto_{sample}.txt"
+		outputdir + "benchmarks/kb_{sample}.txt"
 	threads:
 		config["ncores"]
 	params:
-		kallistoindex = config["kallistoindex"],
-		fldMean = config["fldMean"],
-		fldSD = config["fldSD"],
-		kallistodir = outputdir + "kallisto"
+		kbindex = config["kbindex"],
+		t2g = config["t2g"],
+		kbdir = outputdir + "kb/{sample}"
 	conda:
 		"envs/environment.yaml"
 	shell:
-		"echo 'kallisto version:\n' > {log}; kallisto --version >> {log}; "
-		"kallisto quant -i {params.kallistoindex} -l A -1 {input.fastq1} -2 {input.fastq2} "
-		"-o {params.kallistodir}/{wildcards.sample} --seqBias --gcBias "
-		"--fldMean {params.fldMean} --fldSD {params.fldSD} -p {threads}"
+		# "echo 'kb version:\n' > {log}; kb version >> {log}; "
+		"kb count -i {params.kbindex} -g {params.t2g} -x SMARTSEQ --h5ad -t {threads} -o {params.kbdir} {input.fastq1} {input.fastq2}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
@@ -864,7 +812,7 @@ rule tximport:
 		expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names.values.tolist()),
 		script = "scripts/run_tximport.R"
 	output:
-		unfiltered_seu_rds = outputdir + "seurat/unfiltered_seu.rds",
+		outrds = outputdir + "seurat/stringtie_seu.rds",
 	log:
 		outputdir + "Rout/tximport.Rout"
 	benchmark:
@@ -875,7 +823,7 @@ rule tximport:
 	conda:
 		Renv
 	shell:
-		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' proj_dir='{proj_dir}' unfiltered_seu_rds='{output.unfiltered_seu_rds}' organism='{params.organism}'" {input.script} {log}'''
+		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' proj_dir='{proj_dir}' outrds='{output.outrds}' organism='{params.organism}'" {input.script} {log}'''
 
 ## rna velocity on a seurat object
 rule velocyto_seurat:

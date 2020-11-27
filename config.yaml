@@ -32,6 +32,9 @@ chrom_sizes: /dataVolume/storage/Homo_sapiens/grch38/Homo_sapiens.GRCh38.dna_sm.
 ##--------------------------------------------------------------------------------------------
 salmonindex: /dataVolume/storage/Homo_sapiens/grch38/SalmonIndex/Homo_sapiens.GRCh38.9870.8.2
 salmonk: 31
+kbindex: /dataVolume/storage/Homo_sapiens/grch38/KallistoIndex/Homo_sapiens.kb.idx
+t2g: /dataVolume/storage/Homo_sapiens/grch38/KallistoIndex/t2g.txt
+kallistok: 31
 STARindex: /dataVolume/storage/Homo_sapiens/grch38_STAR_index
 HISAT2index: /dataVolume/storage/Homo_sapiens/grch38_tran/genome_tran
 ##--------------------------------------------------------------------------------------------
