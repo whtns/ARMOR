@@ -99,10 +99,10 @@ def jbrowse_output(wildcards):
   input.append("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json")
   return input
 
-def kb_output(wildcards):
-	input = []
-	input.extend(expand(outputdir + "kb/{sample}/adata.h5ad", sample = samples.names[samples.type == 'PE'].values.tolist()))
-	return input
+# def kb_output(wildcards):
+# 	input = []
+# 	input.extend(expand(outputdir + "kb/unfiltered/adata.h5ad", sample = samples.names[samples.type == 'PE'].values.tolist()))
+# 	return input
   
 	
 ## ------------------------------------------------------------------------------------ ##
@@ -114,7 +114,7 @@ rule all:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
 		# outputdir + "seurat/stringtie_seu.rds",
-		kb_output
+		outputdir + "kb/unfiltered/adata.h5ad",
 		# stringtie_output,
 		# outputdir + "seurat/legacy_unfiltered_seu.rds",
 		# dexseqoutput
@@ -589,28 +589,34 @@ rule dexseq:
 ## ------------------------------------------------------------------------------------ ##
 ## kb abundance estimation
 ## ------------------------------------------------------------------------------------ ##
+
 # Estimate abundances with kb
 rule kbPE:
 	input:
-		fastq1 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext1"]) + "_val_1.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext1"]) + "." + str(config["fqsuffix"]) + ".gz",
-		fastq2 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext2"]) + "_val_2.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext2"]) + "." + str(config["fqsuffix"]) + ".gz"
+	  expand(
+	    outputdir + "FASTQtrimmed/{sample}_{extension}",
+	    sample = samples.names[samples.type == 'PE'].values.tolist(),
+	    extension = [
+	      str(config["fqext1"]) + "_val_1.fq.gz",
+	      str(config["fqext2"]) + "_val_2.fq.gz"
+	    ])
 	output:
-		outputdir + "kb/{sample}/adata.h5ad"
+		outputdir + "kb/unfiltered/adata.h5ad"
 	log:
-		outputdir + "logs/kb_{sample}.log"
+		outputdir + "logs/kb_unfiltered.log"
 	benchmark:
-		outputdir + "benchmarks/kb_{sample}.txt"
+		outputdir + "benchmarks/kb_unfiltered.txt"
 	threads:
 		config["ncores"]
 	params:
 		kbindex = config["kbindex"],
 		t2g = config["t2g"],
-		kbdir = outputdir + "kb/{sample}"
+		kbdir = outputdir + "kb/unfiltered"
 	conda:
 		"envs/environment.yaml"
 	shell:
 		# "echo 'kb version:\n' > {log}; kb version >> {log}; "
-		"kb count -i {params.kbindex} -g {params.t2g} -x SMARTSEQ --h5ad -t {threads} -o {params.kbdir} {input.fastq1} {input.fastq2}"
+		"kb count -i {params.kbindex} -g {params.t2g} -x SMARTSEQ --h5ad -t {threads} -o {params.kbdir} {input}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
