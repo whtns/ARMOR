@@ -616,7 +616,7 @@ rule kbPE:
 		"envs/environment.yaml"
 	shell:
 		# "echo 'kb version:\n' > {log}; kb version >> {log}; "
-		"kb count -i {params.kbindex} -g {params.t2g} -x SMARTSEQ --h5ad -t {threads} --keep-tmp -o {params.kbdir} {input}"
+		"kb count --overwrite -i {params.kbindex} -g {params.t2g} -x SMARTSEQ --h5ad -t {threads} --keep-tmp -o {params.kbdir} {input}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
