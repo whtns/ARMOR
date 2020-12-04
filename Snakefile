@@ -603,6 +603,8 @@ rule kallisto_batch:
 		config["ncores"]
 	run:
 		# make batch
+		# samples = pd.read_csv(config["metatxt"], sep='\t')
+		batch_table = samples[['names', 'type']]
 		batch_table = samples.assign(R1="../data/FASTQ/"+samples['names']+"_R1.fastq.gz", R2="../data/FASTQ/"+samples['names']+"_R2.fastq.gz")
 		batch_table = batch_table.drop(['type'], axis=1)
 		batch_table.to_csv(output[0], sep = "\t", index = False, header = False)
