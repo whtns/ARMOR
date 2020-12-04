@@ -114,7 +114,7 @@ rule all:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
 		# outputdir + "seurat/stringtie_seu.rds",
-		outputdir + "kb/unfiltered/adata.h5ad",
+		outputdir + "kallisto/pseudoalignments.tsv"
 		# stringtie_output,
 		# outputdir + "seurat/legacy_unfiltered_seu.rds",
 		# dexseqoutput
@@ -590,33 +590,43 @@ rule dexseq:
 ## kb abundance estimation
 ## ------------------------------------------------------------------------------------ ##
 
-# Estimate abundances with kb
-rule kbPE:
-	input:
-	  expand(
-	    outputdir + "FASTQtrimmed/{sample}_{extension}",
-	    sample = samples.names[samples.type == 'PE'].values.tolist(),
-	    extension = [
-	      str(config["fqext1"]) + "_val_1.fq.gz",
-	      str(config["fqext2"]) + "_val_2.fq.gz"
-	    ])
-	output:
-		outputdir + "kb/unfiltered/adata.h5ad"
+rule kallisto_batch:
+  input:
+    metatxt = config["metatxt"]
+  output:
+    outputdir + "kallisto/smart-seq_batch.txt"
 	log:
-		outputdir + "logs/kb_unfiltered.log"
+		outputdir + "logs/kallisto.log"
 	benchmark:
-		outputdir + "benchmarks/kb_unfiltered.txt"
+		outputdir + "benchmarks/kallisto.txt"
+	threads:
+		config["ncores"]
+	run:
+		# make batch
+		batch_table = samples.assign(R1="../data/FASTQ/"+samples['names']+"_R1.fastq.gz", R2="../data/FASTQ/"+samples['names']+"_R2.fastq.gz")
+		batch_table = batch_table.drop(['type'], axis=1)
+		batch_table.to_csv(output[0], sep = "\t", index = False, header = False)
+
+# Estimate abundances with kb
+rule kallistoPE:
+	input:
+	  kallistobatch = outputdir + "kallisto/smart-seq_batch.txt"
+	output:
+		outputdir + "kallisto/pseudoalignments.tsv"
+	log:
+		outputdir + "logs/kallisto.log"
+	benchmark:
+		outputdir + "benchmarks/kallisto.txt"
 	threads:
 		config["ncores"]
 	params:
-		kbindex = config["kbindex"],
-		t2g = config["t2g"],
-		kbdir = outputdir + "kb/unfiltered"
+		kallistoindex = config["kallistoindex"],
+		kallistodir = outputdir + "kallisto",
 	conda:
 		"envs/environment.yaml"
 	shell:
-		# "echo 'kb version:\n' > {log}; kb version >> {log}; "
-		"kb count --overwrite -i {params.kbindex} -g {params.t2g} -x SMARTSEQ --h5ad -t {threads} --keep-tmp -o {params.kbdir} {input}"
+		"echo 'kallisto version:\n' > {log}; kallisto version >> {log}; "
+		"kallisto pseudo -i {params.kallistoindex} -o {params.kallistodir} -b {input.kallistobatch} -t {threads}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
