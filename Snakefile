@@ -114,7 +114,7 @@ rule all:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
 		# outputdir + "seurat/stringtie_seu.rds",
-		outputdir + "kallisto/matrix.tsv"
+		outputdir + "kallisto/matrix.abundance.mtx"
 		# stringtie_output,
 		# outputdir + "seurat/legacy_unfiltered_seu.rds",
 		# dexseqoutput
@@ -614,7 +614,7 @@ rule kallistoPE:
 	input:
 	  kallistobatch = outputdir + "kallisto/smart-seq_batch.txt"
 	output:
-		outputdir + "kallisto/matrix.tsv"
+		outputdir + "kallisto/matrix.abundance.mtx"
 	log:
 		outputdir + "logs/kallisto.log"
 	benchmark:
