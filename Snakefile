@@ -628,7 +628,7 @@ rule kallistoPE:
 		"envs/environment.yaml"
 	shell:
 		"echo 'kallisto version:\n' > {log}; kallisto version >> {log}; "
-		"kallisto pseudo -i {params.kallistoindex} -o {params.kallistodir} -b {input.kallistobatch} -t {threads}"
+		"kallisto pseudo --quant -i {params.kallistoindex} -o {params.kallistodir} -b {input.kallistobatch} -t {threads}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
