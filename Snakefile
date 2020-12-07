@@ -114,7 +114,7 @@ rule all:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
 		# outputdir + "seurat/stringtie_seu.rds",
-		outputdir + "kallisto/matrix.abundance.mtx"
+		outputdir + "kallisto/adata.h5ad"
 		# stringtie_output,
 		# outputdir + "seurat/legacy_unfiltered_seu.rds",
 		# dexseqoutput
@@ -629,6 +629,28 @@ rule kallistoPE:
 	shell:
 		"echo 'kallisto version:\n' > {log}; kallisto version >> {log}; "
 		"kallisto pseudo --quant -i {params.kallistoindex} -o {params.kallistodir} -b {input.kallistobatch} -t {threads}"
+		
+# convert kallisto output to anndata
+rule kallisto2adata:
+	input:
+	  matrix = outputdir + "kallisto/matrix.abundance.mtx",
+	  cells = outputdir + "kallisto/matrix.cells",
+	  transcripts = outputdir + "kallisto/transcripts.txt",
+	  script = "scripts/make_adata.py"
+	output:
+		outputdir + "kallisto/adata.h5ad"
+	log:
+		outputdir + "logs/kallisto.log"
+	benchmark:
+		outputdir + "benchmarks/kallisto.txt"
+	threads:
+		config["ncores"]
+	params:
+		kallistodir = outputdir + "kallisto/",
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"python {input.script} -m {input.matrix} -c {input.cells} -t {input.transcripts} --outdir {params.kallistodir}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
