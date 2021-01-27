@@ -12,14 +12,14 @@ suppressPackageStartupMessages({
   library(seuratTools)
 })
 
-outrds = "output/seurat/salmon_seu.rds"
+# outrds = "output/seurat/salmon_seu.rds"
 organism = "Homo_sapiens"
 proj_dir = "."
 
 # print(stringtiedir)
 print(proj_dir)
-print(unfiltered_seu_rds)
-print(legacy_seu_rds)
+print(outrds)
+# print(legacy_seu_rds)
 print(organism)
 print(getwd())
 
@@ -35,12 +35,10 @@ tpm_meta <- seuratTools::load_meta(proj_dir)
 feature_seus <- imap(txi_features, seu_from_tximport, tpm_meta)
 
 feature_seus <- seuratTools::clustering_workflow(feature_seus, organism = organism)
-
-legacy_seus <- seuratTools::clustering_workflow(feature_seus, organism = organism, legacy_settings = TRUE)
-
 saveRDS(feature_seus, file = unfiltered_seu_rds)
 
-saveRDS(legacy_seus, file = legacy_seu_rds)
+# legacy_seus <- seuratTools::clustering_workflow(feature_seus, organism = organism, legacy_settings = TRUE)
+# saveRDS(legacy_seus, file = legacy_seu_rds)
 
 sessionInfo()
 date()

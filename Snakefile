@@ -113,8 +113,8 @@ rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
 		bigwigoutput,
-		# outputdir + "seurat/stringtie_seu.rds",
-		outputdir + "kallisto/adata.h5ad"
+		outputdir + "seurat/unfiltered_seu.rds",
+		# outputdir + "kallisto/adata.h5ad"
 		# stringtie_output,
 		# outputdir + "seurat/legacy_unfiltered_seu.rds",
 		# dexseqoutput
@@ -852,7 +852,7 @@ rule tximport:
 		expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names.values.tolist()),
 		script = "scripts/run_tximport.R"
 	output:
-		outrds = outputdir + "seurat/stringtie_seu.rds",
+		outrds = outputdir + "seurat/unfiltered_seu.rds",
 	log:
 		outputdir + "Rout/tximport.Rout"
 	benchmark:
