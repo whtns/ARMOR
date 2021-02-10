@@ -27,7 +27,7 @@ tpm_meta <- seuratTools::load_meta(proj_dir)
 
 feature_seus <- map(txi_features, seu_from_tximport, tpm_meta)
 
-feature_seus <- seuratTools::clustering_workflow(feature_seus, organism = organism)
+feature_seus <- seuratTools::clustering_workflow(feature_seus, organism = organism, legacy_settings = TRUE)
 
 saveRDS(feature_seus, file = outrds)
 
