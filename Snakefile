@@ -80,7 +80,7 @@ def dbtss_output(wildcards):
 	
 def bigwigoutput(wildcards):
   input = []
-  input.extend(expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  input.extend(expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.all.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
   return input
 
 def dexseqoutput(wildcards):
@@ -180,7 +180,7 @@ rule runstar:
 rule runhisat2:
 	input:
 		expand(outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam.bai", sample = samples.names.values.tolist()),
-		expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names.values.tolist())
+		expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.all.bw", sample = samples.names.values.tolist())
 		
 ## DBTSS coverage
 rule rundbtss:
@@ -341,7 +341,7 @@ rule fastqctrimmed:
 ## Rseqc gene body coverage plot
 rule genebodycoverage:
 	input:
-		bigwig = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw"
+		bigwig = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.all.bw"
 	output:
 		coverage_txt = outputdir + "rseqc/{sample}.geneBodyCoverage.txt"
 	params:
@@ -994,7 +994,7 @@ def shiny_input(wildcards):
 	if config["run_STAR"]:
 		input.extend(expand(outputdir + "STARbigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names.values.tolist()))
 	if config["run_HISAT2"]:
-		input.extend(expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names.values.tolist()))
+		input.extend(expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.all.bw", sample = samples.names.values.tolist()))
 	return input
 
 def shiny_params(wildcards):
