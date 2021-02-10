@@ -519,9 +519,9 @@ rule bigwighisat2:
 	input:
 		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
 	output:
-		outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.all.bw"
+		outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.all.bw"
 	params:
-	  prefix = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out"
+	  prefix = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out"
 		# HISAT2bigwigdir = outputdir + "HISAT2bigwig"
 	log:
 		outputdir + "logs/bigwig_{sample}.log"
