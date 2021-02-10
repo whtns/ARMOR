@@ -514,15 +514,15 @@ rule bamindexhisat2:
 		"echo 'samtools version:\n' > {log}; samtools --version >> {log}; "
 		"samtools index {input.bam}"
 
-## Convert BAM files to bigWig
+## Convert gdna BAM files to bigWig
 rule bigwighisat2:
 	input:
-		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam",
-		chrl = os.path.dirname(config["HISAT2index"]) + "/chrNameLength.txt"
+		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
 	output:
-		outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw"
+		outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.all.bw"
 	params:
-		HISAT2bigwigdir = outputdir + "HISAT2bigwig"
+	  prefix = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out"
+		# HISAT2bigwigdir = outputdir + "HISAT2bigwig"
 	log:
 		outputdir + "logs/bigwig_{sample}.log"
 	benchmark:
@@ -530,12 +530,7 @@ rule bigwighisat2:
 	conda:
 		"envs/environment.yaml"
 	shell:
-		"echo 'bedtools version:\n' > {log}; bedtools --version >> {log}; "
-		"bedtools genomecov -split -ibam {input.bam} -bg | LC_COLLATE=C sort -k1,1 -k2,2n > "
-		"{params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph; "
-		"bedGraphToBigWig {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph "
-		"{input.chrl} {output}; "
-		#"rm -f {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph"
+	  "megadepth {input.bam} --threads {threads} --bigwig --prefix {params.prefix}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Stringtie
