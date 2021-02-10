@@ -78,11 +78,31 @@ def dbtss_output(wildcards):
 	input.extend(expand(outputdir + "dbtss_coverage/{sample}_dbtss_coverage_over_10.txt", sample = samples.names[samples.type == 'PE'].values.tolist()))
 	return input
 	
+def bigwigoutput(wildcards):
+  input = []
+  input.extend(expand(outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  return input
+
+def dexseqoutput(wildcards):
+  input = []
+  input.extend(expand(outputdir + "dexseq/{sample}.txt", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  return input
+  
 def jbrowse_output(wildcards):
   input = []
+  input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json"))
+  # input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/output"))
   input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bw", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  input.extend(expand("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bam.bai", sample = samples.names[samples.type == 'PE'].values.tolist()))
+  
   input.append("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json")
   return input
+
+# def kb_output(wildcards):
+# 	input = []
+# 	input.extend(expand(outputdir + "kb/unfiltered/adata.h5ad", sample = samples.names[samples.type == 'PE'].values.tolist()))
+# 	return input
   
 	
 ## ------------------------------------------------------------------------------------ ##
@@ -92,11 +112,18 @@ def jbrowse_output(wildcards):
 rule all:
 	input:
 		outputdir + "MultiQC/multiqc_report.html",
+		bigwigoutput,
 		outputdir + "seurat/unfiltered_seu.rds",
+		# outputdir + "kallisto/adata.h5ad"
+		# stringtie_output,
+		# outputdir + "seurat/legacy_unfiltered_seu.rds",
+		# dexseqoutput
 		# dbtss_output,
-		jbrowse_output,
+		# jbrowse_output
 		# loom_file = outputdir + "velocyto/" + os.path.basename(proj_dir) + ".loom",
-		# velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds"
+		# velocyto_seu = outputdir + "velocyto/" + "unfiltered_seu.rds",
+		# loom = outputdir + "scenic/unfiltered.loom"
+		# final_loom = outputdir + "scenic/unfiltered-final.loom"
 
 rule setup:
 	input:
@@ -181,7 +208,7 @@ rule softwareversions:
 		"envs/environment.yaml"
 	shell:
 		"echo -n 'ARMOR version ' && cat version; "
-		"salmon --version; trim_galore --version; "
+		"salmon --version; kallisto version; trim_galore --version; "
 		"echo -n 'cutadapt ' && cutadapt --version; "
 		"fastqc --version; STAR --version; hisat2 --version; samtools --version; multiqc --version; "
 		"bedtools --version"
@@ -189,6 +216,7 @@ rule softwareversions:
 ## ------------------------------------------------------------------------------------ ##
 ## Reference preparation
 ## ------------------------------------------------------------------------------------ ##
+
 ## Generate Salmon index from merged cDNA and ncRNA files
 rule salmonindex:
 	input:
@@ -216,6 +244,8 @@ rule salmonindex:
       salmon index -t {input.txome} -k {params.salmonk} -i {params.salmonoutdir} --type quasi
     fi
     """
+    
+# kb ref -i transcriptome.idx -g transcripts_to_genes.txt -f1 cdna.fa dna.primary_assembly.fa.gz gtf.gz
 
 ## Generate linkedtxome mapping
 rule linkedtxome:
@@ -242,28 +272,28 @@ rule linkedtxome:
 		'''{Rbin} CMD BATCH --no-restore --no-save "--args transcriptfasta='{input.txome}' salmonidx='{input.salmonidx}' gtf='{input.gtf}' annotation='{params.flag}' organism='{params.organism}' release='{params.release}' build='{params.build}' output='{output}'" {input.script} {log}'''
 
 ## Generate STAR index
-rule starindex:
-	input:
-		genome = config["genome"],
-		gtf = config["gtf"]
-	output:
-		config["STARindex"] + "/SA",
-		config["STARindex"] + "/chrNameLength.txt"
-	log:
-		outputdir + "logs/STAR_index.log"
-	benchmark:
-		outputdir + "benchmarks/STAR_index.txt"
-	params:
-		STARindex = config["STARindex"],
-		readlength = config["readlength"]
-	conda:
-		"envs/environment.yaml"
-	threads:
-		config["ncores"]
-	shell:
-		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
-		"STAR --runMode genomeGenerate --runThreadN {threads} --genomeDir {params.STARindex} "
-		"--genomeFastaFiles {input.genome} --sjdbGTFfile {input.gtf} --sjdbOverhang {params.readlength}"
+# rule starindex:
+# 	input:
+# 		genome = config["genome"],
+# 		gtf = config["gtf"]
+# 	output:
+# 		config["STARindex"] + "/SA",
+# 		config["STARindex"] + "/chrNameLength.txt"
+# 	log:
+# 		outputdir + "logs/STAR_index.log"
+# 	benchmark:
+# 		outputdir + "benchmarks/STAR_index.txt"
+# 	params:
+# 		STARindex = config["STARindex"],
+# 		readlength = config["readlength"]
+# 	conda:
+# 		"envs/environment.yaml"
+# 	threads:
+# 		config["ncores"]
+# 	shell:
+# 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
+# 		"STAR --runMode genomeGenerate --runThreadN {threads} --genomeDir {params.STARindex} "
+# 		"--genomeFastaFiles {input.genome} --sjdbGTFfile {input.gtf} --sjdbOverhang {params.readlength}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Quality control
@@ -435,7 +465,7 @@ rule HISAT2PE:
 		fastq1 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext1"]) + "_val_1.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext1"]) + "." + str(config["fqsuffix"]) + ".gz",
 		fastq2 = outputdir + "FASTQtrimmed/{sample}_" + str(config["fqext2"]) + "_val_2.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}_" + str(config["fqext2"]) + "." + str(config["fqsuffix"]) + ".gz"
 	output:
-		bam = temp(outputdir + "HISAT2/{sample}/{sample}_Aligned.out.bam")
+		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.out.bam"
 	threads:
 		config["ncores"]
 	log:
@@ -504,7 +534,8 @@ rule bigwighisat2:
 		"bedtools genomecov -split -ibam {input.bam} -bg | LC_COLLATE=C sort -k1,1 -k2,2n > "
 		"{params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph; "
 		"bedGraphToBigWig {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph "
-		"{input.chrl} {output}; rm -f {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph"
+		"{input.chrl} {output}; "
+		#"rm -f {params.HISAT2bigwigdir}/{wildcards.sample}_Aligned.sortedByCoord.out.bedGraph"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Stringtie
@@ -529,6 +560,97 @@ rule stringtie:
 	shell:
 		"echo 'stringtie version:\n' > {log}; stringtie --version >> {log}; "
 		"stringtie {input.bam} -G {params.stringtiegtf} -x MT -eB -o {output.gtf}"
+
+## ------------------------------------------------------------------------------------ ##
+## DEXSeq
+## ------------------------------------------------------------------------------------ ##
+
+# Transcript assembly using dexseq
+rule dexseq:
+	input:
+		bam = outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
+	output:
+		txt = outputdir + "dexseq/{sample}.txt"
+	log:
+		outputdir + "logs/dexseq_{sample}.log"
+	benchmark:
+		outputdir + "benchmarks/dexseq_{sample}.txt"
+	threads:
+		config["ncores"]
+	params:
+		dexseqgtf = config["exon_collapsed_gff"],
+		dexseqdir = outputdir + "dexseq"
+	conda:
+		"envs/environment.yaml"
+	shell:
+		# "echo 'dexseq version:\n' > {log}; dexseq --version >> {log}; "
+		"python scripts/dexseq_count.py -r pos -p yes -s no -f bam {params.dexseqgtf} {input.bam} {output.txt}"
+
+## ------------------------------------------------------------------------------------ ##
+## kb abundance estimation
+## ------------------------------------------------------------------------------------ ##
+
+rule kallisto_batch:
+  input:
+    metatxt = config["metatxt"]
+  output:
+    outputdir + "kallisto/smart-seq_batch.txt"
+	log:
+		outputdir + "logs/kallisto.log"
+	benchmark:
+		outputdir + "benchmarks/kallisto.txt"
+	threads:
+		config["ncores"]
+	run:
+		# make batch
+		# samples = pd.read_csv(config["metatxt"], sep='\t')
+		batch_table = samples[['names', 'type']]
+		batch_table = batch_table.assign(R1="../data/FASTQ/"+batch_table['names']+"_R1.fastq.gz", R2="../data/FASTQ/"+batch_table['names']+"_R2.fastq.gz")
+		batch_table = batch_table.drop(['type'], axis=1)
+		batch_table.to_csv(output[0], sep = "\t", index = False, header = False)
+
+# Estimate abundances with kb
+rule kallistoPE:
+	input:
+	  kallistobatch = outputdir + "kallisto/smart-seq_batch.txt"
+	output:
+		outputdir + "kallisto/matrix.abundance.mtx"
+	log:
+		outputdir + "logs/kallisto.log"
+	benchmark:
+		outputdir + "benchmarks/kallisto.txt"
+	threads:
+		config["ncores"]
+	params:
+		kallistoindex = config["kallistoindex"],
+		kallistodir = outputdir + "kallisto",
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"echo 'kallisto version:\n' > {log}; kallisto version >> {log}; "
+		"kallisto pseudo --quant -i {params.kallistoindex} -o {params.kallistodir} -b {input.kallistobatch} -t {threads}"
+		
+# convert kallisto output to anndata
+rule kallisto2adata:
+	input:
+	  matrix = outputdir + "kallisto/matrix.abundance.mtx",
+	  cells = outputdir + "kallisto/matrix.cells",
+	  transcripts = outputdir + "kallisto/transcripts.txt",
+	  script = "scripts/make_adata.py"
+	output:
+		outputdir + "kallisto/adata.h5ad"
+	log:
+		outputdir + "logs/kallisto.log"
+	benchmark:
+		outputdir + "benchmarks/kallisto.txt"
+	threads:
+		config["ncores"]
+	params:
+		kallistodir = outputdir + "kallisto/",
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"python {input.script} -m {input.matrix} -c {input.cells} -t {input.transcripts} --outdir {params.kallistodir}"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Salmon abundance estimation
@@ -589,28 +711,28 @@ rule salmonPE:
 ## STAR mapping
 ## ------------------------------------------------------------------------------------ ##
 ## Genome mapping with STAR
-rule starSE:
-	input:
-		index = config["STARindex"] + "/SA",
-		fastq = outputdir + "FASTQtrimmed/{sample}_trimmed.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}." + str(config["fqsuffix"]) + ".gz"
-	output:
-		outputdir + "STAR/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
-	threads:
-		config["ncores"]
-	log:
-		outputdir + "logs/STAR_{sample}.log"
-	benchmark:
-		outputdir + "benchmarks/STAR_{sample}.txt"
-	params:
-		STARindex = config["STARindex"],
-		STARdir = outputdir + "STAR"
-	conda:
-		"envs/environment.yaml"
-	shell:
-		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
-		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq} "
-		"--runThreadN {threads} --outFileNamePrefix {params.STARdir}/{wildcards.sample}/{wildcards.sample}_ "
-		"--outSAMtype BAM SortedByCoordinate --readFilesCommand gunzip -c"
+# rule starSE:
+# 	input:
+# 		index = config["STARindex"] + "/SA",
+# 		fastq = outputdir + "FASTQtrimmed/{sample}_trimmed.fq.gz" if config["run_trimming"] else FASTQdir + "{sample}." + str(config["fqsuffix"]) + ".gz"
+# 	output:
+# 		outputdir + "STAR/{sample}/{sample}_Aligned.sortedByCoord.out.bam"
+# 	threads:
+# 		config["ncores"]
+# 	log:
+# 		outputdir + "logs/STAR_{sample}.log"
+# 	benchmark:
+# 		outputdir + "benchmarks/STAR_{sample}.txt"
+# 	params:
+# 		STARindex = config["STARindex"],
+# 		STARdir = outputdir + "STAR"
+# 	conda:
+# 		"envs/environment.yaml"
+# 	shell:
+# 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
+# 		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq} "
+# 		"--runThreadN {threads} --outFileNamePrefix {params.STARdir}/{wildcards.sample}/{wildcards.sample}_ "
+# 		"--outSAMtype BAM SortedByCoordinate --readFilesCommand gunzip -c"
 
 rule starPE:
 	input:
@@ -634,7 +756,7 @@ rule starPE:
 		"echo 'STAR version:\n' > {log}; STAR --version >> {log}; "
 		"STAR --genomeDir {params.STARindex} --readFilesIn {input.fastq1} {input.fastq2} "
 		"--runThreadN {threads} --outFileNamePrefix {params.STARdir}/{wildcards.sample}/{wildcards.sample}_ "
-		"--outSAMtype BAM SortedByCoordinate --readFilesCommand gunzip -c"
+		"--outSAMtype BAM SortedByCoordinate --outSAMattrIHstart 0 --readFilesCommand gunzip -c"
 
 ## Index bam files
 rule bamindex:
@@ -730,7 +852,7 @@ rule tximport:
 		expand(outputdir + "stringtie/{sample}/{sample}.gtf", sample = samples.names.values.tolist()),
 		script = "scripts/run_tximport.R"
 	output:
-		outputdir + "seurat/unfiltered_seu.rds"
+		outrds = outputdir + "seurat/unfiltered_seu.rds",
 	log:
 		outputdir + "Rout/tximport.Rout"
 	benchmark:
@@ -741,7 +863,7 @@ rule tximport:
 	conda:
 		Renv
 	shell:
-		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' proj_dir='{proj_dir}' outrds='{output}' organism='{params.organism}'" {input.script} {log}'''
+		'''{Rbin} CMD BATCH --no-restore --no-save "--args stringtiedir='{params.stringtiedir}' proj_dir='{proj_dir}' outrds='{output.outrds}' organism='{params.organism}'" {input.script} {log}'''
 
 ## rna velocity on a seurat object
 rule velocyto_seurat:
@@ -762,6 +884,12 @@ rule velocyto_seurat:
 	shell:
 		'''{Rbin} CMD BATCH --no-restore --no-save "--args loom_path='{input.loom_file}' proj_dir='{proj_dir}' outrds='{output}' organism='{params.organism}'" {input.script} {log}'''
 
+
+## ------------------------------------------------------------------------------------ ##
+## SCENIC
+## ------------------------------------------------------------------------------------ ##
+
+include: "rules/scenic.smk"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Input variable check
@@ -841,8 +969,8 @@ rule edgeR:
 ## DRIMSeq
 rule DRIMSeq:
 	input:
-	    outputdir + "Rout/pkginstall_state.txt",
-		rds = outputdir + "outputR/edgeR_dge.rds",
+	  outputdir + "Rout/pkginstall_state.txt",
+		rds = outputdir + "seurat/unfiltered_seu.rds",
 		script = "scripts/run_render.R",
 		template = "scripts/DRIMSeq_dtu.Rmd"
 	output:
@@ -851,9 +979,7 @@ rule DRIMSeq:
 	params:
 		directory = outputdir + "outputR",
 		organism = config["organism"],
-		ncores = config["ncores"],
-                design = config["design"].replace(" ", "") if config["design"] is not None else "",
-                contrast = config["contrast"].replace(" ", "") if config["contrast"] is not None else ""
+		ncores = config["ncores"], design = config["design"].replace(" ", "") if config["design"] is not None else "", contrast = config["contrast"].replace(" ", "") if config["contrast"] is not None else ""
 	log:
 		outputdir + "Rout/run_dtu_drimseq.Rout"
 	benchmark:
@@ -933,60 +1059,8 @@ rule dbtss:
 ## ------------------------------------------------------------------------------------ ##
 ## configure jbrowse
 ## ------------------------------------------------------------------------------------ ##
-## configure jbrowse
 
-rule jbrowsemeta:
-  input: 
-    metatxt = config['metatxt']
-  output:
-    metacsv = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + config['metacsv']
-  threads:
-    config['ncores']
-  conda: 
-    "envs/environment.yaml"
-  shell:
-    "cp {input.metatxt} {output.metacsv}"
-
-rule jbrowse:
-	input:
-		hisatbigwig = outputdir + "HISAT2bigwig/{sample}_Aligned.sortedByCoord.out.bw"
-	output:
-	  bigwig_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/samples/{sample}.bw"
-	threads:
-		config["ncores"]
-	params:
-	  proj_name = os.path.basename(proj_dir)
-	conda:
-		"envs/environment.yaml"
-	shell:
-	  "ln -s {input.hisatbigwig} {output.bigwig_symlink}"
-	  
-rule jbrowsetracklist:
-	input:
-		script = "scripts/format_tracklist_json.py",
-		refdir = config["refdir"],
-		gff = config["gff"],
-		gff_tbi = config["gff_tbi"],
-		refseq = config["refseq"]
-	output:
-	  tracklist_json = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/trackList.json",
-	  refdir_symlink = directory("/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/reference/"),
-	  gff_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/Homo_sapiens.GRCh38.87.sorted.gff3.gz",
-	  gff_tbi_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/Homo_sapiens.GRCh38.87.sorted.gff3.gz.tbi",
-	  refseq_symlink = "/var/www/html/jbrowse/" + os.path.basename(proj_dir) + "/seq/refSeqs.json"
-	threads:
-		config["ncores"]
-	params:
-	  proj_name = os.path.basename(proj_dir),
-	  metacsv = os.path.basename(proj_dir) + "/" + config['metacsv']
-	conda:
-		"envs/environment.yaml"
-	shell:
-	  "{input.script} '{params.proj_name}' '{params.metacsv}';"
-	  "ln -sr {input.refdir} {output.refdir_symlink};"
-	  "ln -s {input.gff} {output.gff_symlink};"
-	  "ln -s {input.gff_tbi} {output.gff_tbi_symlink};"
-	  "ln -s {input.refseq} {output.refseq_symlink};"
+include: "rules/jbrowse.smk"
 
 ## ------------------------------------------------------------------------------------ ##
 ## Success and failure messages
@@ -996,3 +1070,4 @@ onsuccess:
 
 onerror:
 	print("Error! The Snakemake workflow aborted.")
+
