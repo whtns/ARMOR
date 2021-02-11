@@ -32,10 +32,10 @@ txi_features <- load_counts_by_tximport(proj_dir, type = "stringtie")
 
 tpm_meta <- seuratTools::load_meta(proj_dir)
 
-feature_seus <- imap(txi_features, seu_from_tximport, tpm_meta)
+seu <- seu_from_tximport(txi_features, tpm_meta)
 
-feature_seus <- seuratTools::clustering_workflow(feature_seus, organism = organism)
-saveRDS(feature_seus, file = unfiltered_seu_rds)
+seu <- seuratTools::clustering_workflow(seu, organism = organism)
+saveRDS(seu, file = unfiltered_seu_rds)
 
 # legacy_seus <- seuratTools::clustering_workflow(feature_seus, organism = organism, legacy_settings = TRUE)
 # saveRDS(legacy_seus, file = legacy_seu_rds)
