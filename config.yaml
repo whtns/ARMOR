@@ -123,6 +123,10 @@ feather_db: /dataVolume/storage/Homo_sapiens/scenic/hg38_refseq-10kb_up_and_down
 roi_bed: ../output/dexseq/genes_of_interest.bed
 exon_collapsed_gff: /dataVolume/storage/Homo_sapiens/grch38_tran/Homo_sapiens.GRCh38.87.dexseq.gtf
 
+## scTE
+te_build: hg38
+te_index: /dataVolume/storage/Homo_sapiens/grch38/hg38.exclusive.idx
+
 
 ## Conditional conda rules
 ##---------------------------------------------------------------------------------------------

@@ -881,6 +881,29 @@ rule velocyto_seurat:
 
 
 ## ------------------------------------------------------------------------------------ ##
+## Transposable element quantification
+## ------------------------------------------------------------------------------------ ##
+
+## scTE
+rule scTE:
+	input:
+		bam_files = expand(outputdir + "HISAT2/{sample}/{sample}_Aligned.sortedByCoord.out.bam", sample = samples.names.values.tolist()),
+	output:
+		te_csv = outputdir + "scTE/" + os.path.basename(proj_dir) + "_tes.csv"
+	log:
+		outputdir + "scTE/scTE.out"
+	benchmark:
+		outputdir + "benchmarks/scTE.txt"
+	params:
+	  te_build = config["te_build"],
+	  te_index = config["te_index"]
+	conda:
+		"envs/environment.yaml"
+	shell:
+		"scTE -i {input.bam_files} -o {output} -g {params.te_build} -x {params.te_index} -CB False -UMI False"
+		
+
+## ------------------------------------------------------------------------------------ ##
 ## SCENIC
 ## ------------------------------------------------------------------------------------ ##
 
